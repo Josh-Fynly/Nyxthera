@@ -1,0 +1,3 @@
+kivy
+kivy_garden
+plyer
