@@ -1,11 +1,11 @@
-from core.behavior import BehaviorEngine
+from core.behaviour import BehaviourEngine
 from core.personality import NyxtheraPersonality
 
 def run():
     print("Starting Nyxthera Virtual Pet...")
 
     personality = NyxtheraPersonality()
-    engine = BehaviorEngine(personality)
+    engine = BehaviourEngine(personality)
 
     # Test interaction
     response = engine.react("hello")
