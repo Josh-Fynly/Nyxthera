@@ -1,11 +1,11 @@
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class Personality:
     """
     Nyxthera's evolving personality core.
-    Includes trust, bonding, and emotional regulation.
+    Includes trust, bonding, energy, and fatigue.
     """
 
     def __init__(self):
@@ -16,36 +16,53 @@ class Personality:
 
         # Evolving states
         self.trust = 0.6
-        self.bond = 0.4   # NEW: attachment/familiarity level
+        self.bond = 0.4
         self.energy = 0.8
 
         self.last_interaction = datetime.utcnow()
+
+    def rest(self):
+        """
+        Natural recovery when idle.
+        """
+        self.energy = min(1.0, self.energy + 0.05)
 
     def evolve(self, emotion: str):
         """
         Adjust internal state based on emotional input.
         """
+        now = datetime.utcnow()
+        idle_time = now - self.last_interaction
+
+        # Recover slightly if idle
+        if idle_time > timedelta(minutes=2):
+            self.rest()
+
+        self.last_interaction = now
+
         if emotion == "positive":
             self.trust = min(1.0, self.trust + 0.02)
             self.bond = min(1.0, self.bond + 0.015)
-            self.energy = min(1.0, self.energy + 0.01)
+            self.energy = max(0.2, self.energy - 0.02)
 
         elif emotion == "negative":
             self.trust = max(0.0, self.trust - 0.03)
             self.bond = max(0.0, self.bond - 0.01)
             self.energy = max(0.2, self.energy - 0.05)
 
+        else:
+            self.energy = max(0.3, self.energy - 0.01)
+
     def get_mood(self):
-        """
-        Mood reflects trust, bond, and energy.
-        """
         score = (
-            self.trust * 0.35
-            + self.bond * 0.35
-            + self.energy * 0.3
+            self.trust * 0.3
+            + self.bond * 0.3
+            + self.energy * 0.4
         )
 
-        if score > 0.75:
+        if self.energy < 0.35:
+            return "tired"
+        elif score > 0.75:
             return "bonded"
         elif score > 0.5:
             return "calm"
@@ -57,16 +74,20 @@ class Personality:
 
         responses = {
             "bonded": [
-                "Nyxthera moves closer, clearly comfortable with you.",
-                "Nyxthera hums softly, sharing a quiet moment with you."
+                "Nyxthera stays close, clearly at ease with you.",
+                "Nyxthera hums softly, sharing a peaceful presence."
             ],
             "calm": [
-                "Nyxthera watches attentively, tail swaying slowly.",
-                "Nyxthera acknowledges you with a gentle nod."
+                "Nyxthera watches quietly, breathing steady.",
+                "Nyxthera acknowledges you with calm attention."
             ],
             "guarded": [
-                "Nyxthera keeps a respectful distance, observing quietly.",
-                "Nyxthera remains alert, wings partially folded."
+                "Nyxthera observes cautiously, conserving energy.",
+                "Nyxthera remains alert but reserved."
+            ],
+            "tired": [
+                "Nyxthera curls slightly, wings resting.",
+                "Nyxthera blinks slowly, clearly needing rest."
             ]
         }
 
