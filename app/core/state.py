@@ -1,13 +1,8 @@
-
 import json
 import os
 
 
 class StateManager:
-    """
-    Handles saving and loading Nyxthera's core state.
-    """
-
     FILE = "nyxthera_state.json"
 
     @classmethod
@@ -15,7 +10,8 @@ class StateManager:
         data = {
             "trust": personality.trust,
             "bond": personality.bond,
-            "energy": personality.energy
+            "energy": personality.energy,
+            "health": personality.health
         }
 
         with open(cls.FILE, "w") as f:
@@ -32,3 +28,4 @@ class StateManager:
         personality.trust = data.get("trust", personality.trust)
         personality.bond = data.get("bond", personality.bond)
         personality.energy = data.get("energy", personality.energy)
+        personality.health = data.get("health", personality.health)
