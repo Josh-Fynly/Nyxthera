@@ -1,57 +1,65 @@
 import random
+from datetime import datetime
+
 
 class Personality:
     """
-    Nyxthera's personality engine.
-    Handles traits, evolving moods, and adaptive behaviors.
+    Nyxthera's evolving personality core.
+    Tracks long-term emotional influence and attachment.
     """
 
     def __init__(self):
-        # Base personality traits (0 to 1)
+        # Stable traits
         self.loyalty = 0.9
         self.curiosity = 0.8
         self.playfulness = 0.7
-        self.mischief = 0.3
         self.caring = 0.85
+
+        # Evolving state
+        self.trust = 0.6
         self.energy = 0.8
+        self.last_interaction = datetime.utcnow()
+
+    def evolve(self, emotion: str):
+        """
+        Adjust internal state based on emotional input.
+        """
+        if emotion == "positive":
+            self.trust = min(1.0, self.trust + 0.02)
+            self.energy = min(1.0, self.energy + 0.01)
+        elif emotion == "negative":
+            self.trust = max(0.0, self.trust - 0.03)
+            self.energy = max(0.2, self.energy - 0.05)
 
     def get_mood(self):
-        """
-        Compute mood dynamically based on traits and random factors.
-        """
         score = (
-            self.loyalty * 0.2
-            + self.curiosity * 0.2
-            + self.playfulness * 0.2
-            + self.mischief * 0.1
-            + self.caring * 0.2
-            + self.energy * 0.1
+            self.trust * 0.4
+            + self.energy * 0.3
+            + self.caring * 0.3
         )
+
         if score > 0.75:
             return "warm"
         elif score > 0.5:
-            return "neutral"
+            return "calm"
         else:
-            return "moody"
+            return "guarded"
 
-    def react(self, situation: str) -> str:
-        """
-        Generate a personality-based reaction to a situation.
-        """
+    def respond(self):
         mood = self.get_mood()
 
         responses = {
             "warm": [
-                "Nyxthera purrs softly, nuzzling you affectionately.",
-                "Nyxthera flutters excitedly, eager to play."
+                "Nyxthera leans closer, eyes glowing with quiet affection.",
+                "Nyxthera hums softly, clearly pleased by your presence."
             ],
-            "neutral": [
-                "Nyxthera observes quietly, tilting its head curiously.",
-                "Nyxthera gives a small, polite chirp."
+            "calm": [
+                "Nyxthera watches attentively, tail swaying slowly.",
+                "Nyxthera gives a gentle nod, acknowledging you."
             ],
-            "moody": [
-                "Nyxthera flaps her wings slowly, eyes narrowing slightly.",
-                "Nyxthera withdraws, appearing cautious and reserved."
+            "guarded": [
+                "Nyxthera keeps some distance, studying you carefully.",
+                "Nyxthera folds her wings slightly, alert but calm."
             ]
         }
 
