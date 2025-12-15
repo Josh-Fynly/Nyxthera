@@ -1,15 +1,20 @@
-from core.behaviour import BehaviourEngine
-from core.personality import NyxtheraPersonality
+from core.behavior import Behavior
 
-def run():
-    print("Starting Nyxthera Virtual Pet...")
 
-    personality = NyxtheraPersonality()
-    engine = BehaviourEngine(personality)
+def main():
+    behavior = Behavior()
+    print("Nyxthera is awake. Speak freely. Type 'exit' to leave.")
 
-    # Test interaction
-    response = engine.react("hello")
-    print("Nyxthera:", response)
+    while True:
+        user_input = input("You: ")
+
+        if user_input.lower() in ["exit", "quit"]:
+            print("Nyxthera watches as you depart.")
+            break
+
+        response = behavior.react_to_input(user_input)
+        print(f"Nyxthera: {response}")
+
 
 if __name__ == "__main__":
-    run()
+    main()
