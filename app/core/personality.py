@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 class Personality:
     """
     Nyxthera's evolving personality core.
-    Includes trust, bonding, energy, and fatigue.
+    Includes trust, bonding, energy, fatigue, and health.
     """
 
     def __init__(self):
@@ -19,22 +19,35 @@ class Personality:
         self.bond = 0.4
         self.energy = 0.8
 
+        # Health
+        self.health = "healthy"  # healthy | unwell | recovering
+
         self.last_interaction = datetime.utcnow()
 
     def rest(self):
+        if self.health == "healthy":
+            self.energy = min(1.0, self.energy + 0.05)
+        else:
+            self.energy = min(0.9, self.energy + 0.02)
+
+    def maybe_get_sick(self):
         """
-        Natural recovery when idle.
+        Very rare sickness trigger.
         """
-        self.energy = min(1.0, self.energy + 0.05)
+        if self.energy < 0.25 and self.health == "healthy":
+            if random.random() < 0.05:
+                self.health = "unwell"
+
+    def recover(self):
+        if self.health == "unwell" and self.energy > 0.6:
+            self.health = "recovering"
+        elif self.health == "recovering" and self.energy > 0.8:
+            self.health = "healthy"
 
     def evolve(self, emotion: str):
-        """
-        Adjust internal state based on emotional input.
-        """
         now = datetime.utcnow()
         idle_time = now - self.last_interaction
 
-        # Recover slightly if idle
         if idle_time > timedelta(minutes=2):
             self.rest()
 
@@ -43,7 +56,7 @@ class Personality:
         if emotion == "positive":
             self.trust = min(1.0, self.trust + 0.02)
             self.bond = min(1.0, self.bond + 0.015)
-            self.energy = max(0.2, self.energy - 0.02)
+            self.energy = max(0.2, self.energy - 0.015)
 
         elif emotion == "negative":
             self.trust = max(0.0, self.trust - 0.03)
@@ -53,41 +66,49 @@ class Personality:
         else:
             self.energy = max(0.3, self.energy - 0.01)
 
+        self.maybe_get_sick()
+        self.recover()
+
     def get_mood(self):
+        if self.health == "unwell":
+            return "unwell"
+
+        if self.energy < 0.35:
+            return "tired"
+
         score = (
             self.trust * 0.3
             + self.bond * 0.3
             + self.energy * 0.4
         )
 
-        if self.energy < 0.35:
-            return "tired"
-        elif score > 0.75:
+        if score > 0.75:
             return "bonded"
         elif score > 0.5:
             return "calm"
-        else:
-            return "guarded"
+        return "guarded"
 
     def respond(self):
         mood = self.get_mood()
 
         responses = {
             "bonded": [
-                "Nyxthera stays close, clearly at ease with you.",
-                "Nyxthera hums softly, sharing a peaceful presence."
+                "Nyxthera stays close, clearly comfortable with you.",
+                "Nyxthera hums softly, sharing a warm presence."
             ],
             "calm": [
                 "Nyxthera watches quietly, breathing steady.",
-                "Nyxthera acknowledges you with calm attention."
+                "Nyxthera acknowledges you calmly."
             ],
             "guarded": [
-                "Nyxthera observes cautiously, conserving energy.",
-                "Nyxthera remains alert but reserved."
+                "Nyxthera observes carefully, conserving strength."
             ],
             "tired": [
-                "Nyxthera curls slightly, wings resting.",
-                "Nyxthera blinks slowly, clearly needing rest."
+                "Nyxthera rests her wings, movements slower than usual."
+            ],
+            "unwell": [
+                "Nyxthera remains still, responding softly.",
+                "Nyxthera seems low on energy but aware of you."
             ]
         }
 
