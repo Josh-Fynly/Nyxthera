@@ -1,3 +1,4 @@
+/* --- Global Body --- */
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
@@ -9,6 +10,7 @@ body {
   align-items: center;
 }
 
+/* --- Container --- */
 #container {
   width: 90%;
   max-width: 420px;
@@ -17,10 +19,12 @@ body {
   gap: 1rem;
 }
 
+/* --- Presence Section --- */
 #presence {
   text-align: center;
 }
 
+/* --- Avatar --- */
 #avatar {
   width: 120px;
   height: 120px;
@@ -28,9 +32,10 @@ body {
   border-radius: 50%;
   background: radial-gradient(circle, #5eead4, #020617);
   box-shadow: 0 0 20px rgba(94, 234, 212, 0.6);
+  transition: box-shadow 0.4s ease-in-out; /* Smooth glow transitions */
+}
 
 /* --- Nyxthera Visual States --- */
-
 .avatar-steady {
   box-shadow: 0 0 26px rgba(94, 234, 212, 0.85);
 }
@@ -52,14 +57,15 @@ body {
     0 0 12px rgba(239, 68, 68, 0.5),
     0 0 24px rgba(94, 234, 212, 0.3);
 }
-}
 
+/* --- Dialogue Section --- */
 #dialogue {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
+/* --- Output Box --- */
 #output {
   min-height: 80px;
   padding: 0.75rem;
@@ -67,12 +73,14 @@ body {
   border-radius: 8px;
 }
 
+/* --- Input Box --- */
 #input {
   padding: 0.5rem;
   border-radius: 6px;
   border: none;
 }
 
+/* --- Send Button --- */
 #send {
   padding: 0.5rem;
   border: none;
@@ -80,4 +88,9 @@ body {
   background: #5eead4;
   color: #020617;
   font-weight: bold;
+  cursor: pointer;
+}
+
+#send:hover {
+  background: #3ecdc1;
 }
