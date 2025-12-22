@@ -28,6 +28,30 @@ body {
   border-radius: 50%;
   background: radial-gradient(circle, #5eead4, #020617);
   box-shadow: 0 0 20px rgba(94, 234, 212, 0.6);
+
+/* --- Nyxthera Visual States --- */
+
+.avatar-steady {
+  box-shadow: 0 0 26px rgba(94, 234, 212, 0.85);
+}
+
+.avatar-pulse {
+  box-shadow: 0 0 18px rgba(94, 234, 212, 0.6);
+}
+
+.avatar-alert {
+  box-shadow: 0 0 28px rgba(239, 68, 68, 0.75);
+}
+
+.avatar-rest {
+  box-shadow: 0 0 8px rgba(148, 163, 184, 0.4);
+}
+
+.avatar-fractured {
+  box-shadow:
+    0 0 12px rgba(239, 68, 68, 0.5),
+    0 0 24px rgba(94, 234, 212, 0.3);
+}
 }
 
 #dialogue {
