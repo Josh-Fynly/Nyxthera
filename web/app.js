@@ -4,27 +4,28 @@ const NyxtheraBridge = {
     // Simulated processing delay
     await delay(400);
 
-    // Very simple mock behavior
-    if (text.toLowerCase().includes("hello")) {
+    // Simple mock responses
+    const lower = text.toLowerCase();
+    if (lower.includes("hello")) {
       return "Nyxthera inclines her presence toward you.";
     }
-
-    if (text.toLowerCase().includes("how are you")) {
+    if (lower.includes("how are you")) {
       return "Nyxthera is calm, attentive, and aware of you.";
     }
-
     return "Nyxthera listens, absorbing your intent.";
   },
 
   get_status: async () => {
     await delay(100);
 
-    // Mocked abstract states (match Python bridge keys)
+    // Mocked visual/audio states
     return {
       visual_state: randomChoice([
         "steady_glow",
         "soft_pulse",
-        "dim_rest"
+        "alert_shimmer",
+        "dim_rest",
+        "fractured_glow"
       ]),
       audio_cue: randomChoice([
         "soft_hum",
@@ -72,16 +73,21 @@ send.onclick = async () => {
 function applyVisualState(state) {
   statusLine.textContent = `State: ${state.replace("_", " ")}`;
 
-  const visuals = {
-    steady_glow: "0 0 25px rgba(94,234,212,0.8)",
-    soft_pulse: "0 0 15px rgba(94,234,212,0.5)",
-    dim_rest: "0 0 6px rgba(94,234,212,0.3)"
+  // Reset avatar class
+  avatar.className = "";
+
+  const map = {
+    steady_glow: "avatar-steady",
+    soft_pulse: "avatar-pulse",
+    alert_shimmer: "avatar-alert",
+    dim_rest: "avatar-rest",
+    fractured_glow: "avatar-fractured"
   };
 
-  avatar.style.boxShadow = visuals[state] || visuals.steady_glow;
+  avatar.classList.add(map[state] || "avatar-steady");
 }
 
 function applyAudioCue(cue) {
-  // No sound yet — placeholder for future engines
+  // Placeholder for future audio implementation
   console.log("Audio cue:", cue);
 }
