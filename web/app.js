@@ -1,93 +1,113 @@
-// ---- Mock Nyxthera Bridge (UI Contract) ----
-const NyxtheraBridge = {
-  send_input: async (text) => {
-    // Simulated processing delay
-    await delay(400);
-
-    // Simple mock responses
-    const lower = text.toLowerCase();
-    if (lower.includes("hello")) {
-      return "Nyxthera inclines her presence toward you.";
-    }
-    if (lower.includes("how are you")) {
-      return "Nyxthera is calm, attentive, and aware of you.";
-    }
-    return "Nyxthera listens, absorbing your intent.";
-  },
-
-  get_status: async () => {
-    await delay(100);
-
-    // Mocked visual/audio states
-    return {
-      visual_state: randomChoice([
-        "steady_glow",
-        "soft_pulse",
-        "alert_shimmer",
-        "dim_rest",
-        "fractured_glow"
-      ]),
-      audio_cue: randomChoice([
-        "soft_hum",
-        "steady_breath",
-        "neutral_ambience"
-      ])
-    };
-  }
-};
-
-// ---- Helpers ----
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+// =============================
+// 1️⃣ Math Utilities
+// =============================
+function addVectors(a, b) {
+    if (a.length !== b.length) throw new Error("Vector size mismatch.");
+    return a.map((v, i) => v + b[i]);
 }
 
-function randomChoice(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
+function multiplyMatrixVector(matrix, vector) {
+    if (matrix[0].length !== vector.length)
+        throw new Error("Matrix/vector dimension mismatch.");
+    return matrix.map(row =>
+        row.reduce((sum, val, i) => sum + val * vector[i], 0)
+    );
 }
 
-// ---- UI Wiring ----
-const output = document.getElementById("output");
-const input = document.getElementById("input");
-const send = document.getElementById("send");
+function clampVector(v, min, max) {
+    return v.map(val => Math.max(min, Math.min(max, val)));
+}
+
+// =============================
+// 2️⃣ Deterministic State Engine
+// =============================
+class StateEngine {
+    constructor(initialState, A, B, bounds = [-1, 1]) {
+        this.state = initialState;
+        this.A = A;
+        this.B = B;
+        this.min = bounds[0];
+        this.max = bounds[1];
+    }
+
+    update(inputVector) {
+        const internal = multiplyMatrixVector(this.A, this.state);
+        const influence = multiplyMatrixVector(this.B, inputVector);
+        const next = addVectors(internal, influence);
+        this.state = clampVector(next, this.min, this.max);
+        return this.state;
+    }
+
+    getState() {
+        return this.state;
+    }
+}
+
+// =============================
+// 3️⃣ Initialize Engine
+// =============================
+const initialState = [0.6, 0.4, 0.5, 0.3];
+
+const A = [
+    [0.85, 0.05, 0, 0],
+    [0.05, 0.80, 0.05, 0],
+    [0, 0.05, 0.85, 0.05],
+    [0, 0, 0.05, 0.90]
+];
+
+const B = [
+    [0.2, 0, 0],
+    [0, 0.3, 0],
+    [0, 0, 0.3],
+    [0.1, 0.1, 0.1]
+];
+
+const engine = new StateEngine(initialState, A, B);
+
+// =============================
+// 4️⃣ Rendering Binder
+// =============================
 const avatar = document.getElementById("avatar");
-const statusLine = document.getElementById("status");
+const output = document.getElementById("output");
 
-send.onclick = async () => {
-  const text = input.value.trim();
-  if (!text) return;
-
-  output.textContent = "Nyxthera is listening…";
-  input.value = "";
-
-  // 1. Send input
-  const response = await NyxtheraBridge.send_input(text);
-  output.textContent = response;
-
-  // 2. Pull state
-  const state = await NyxtheraBridge.get_status();
-  applyVisualState(state.visual_state);
-  applyAudioCue(state.audio_cue);
-};
-
-// ---- Visual & Audio Mapping (Abstract) ----
-function applyVisualState(state) {
-  statusLine.textContent = `State: ${state.replace("_", " ")}`;
-
-  // Reset avatar class
-  avatar.className = "";
-
-  const map = {
-    steady_glow: "avatar-steady",
-    soft_pulse: "avatar-pulse",
-    alert_shimmer: "avatar-alert",
-    dim_rest: "avatar-rest",
-    fractured_glow: "avatar-fractured"
-  };
-
-  avatar.classList.add(map[state] || "avatar-steady");
+function normalize(value) {
+    return (value + 1) / 2;
 }
 
-function applyAudioCue(cue) {
-  // Placeholder for future audio implementation
-  console.log("Audio cue:", cue);
+function render(state) {
+    const [calm, engage, curiosity, affinity] = state;
+
+    // Visuals
+    const opacity = normalize(calm);
+    const scale = 0.8 + normalize(engage) * 0.4;
+    const hueShift = normalize(curiosity) * 60;
+
+    avatar.style.opacity = opacity;
+    avatar.style.transform = `scale(${scale})`;
+    avatar.style.background = `hsl(${200 + hueShift}, 70%, 60%)`;
+
+    // Textual feedback
+    output.textContent = `Calm:${calm.toFixed(2)} Engage:${engage.toFixed(2)} Curiosity:${curiosity.toFixed(2)} Affinity:${affinity.toFixed(2)}`;
 }
+
+// =============================
+// 5️⃣ User Input Hook
+// =============================
+document.getElementById("send").addEventListener("click", () => {
+    const inputValue = document.getElementById("input").value.trim();
+
+    // Simple input to vector mapping (placeholder)
+    let vector;
+    if (!inputValue) vector = [0,0,0];
+    else if (inputValue.toLowerCase().includes("good")) vector = [1,0,0];
+    else if (inputValue.toLowerCase().includes("neutral")) vector = [0,1,0];
+    else vector = [0,0,1];
+
+    const newState = engine.update(vector);
+    render(newState);
+
+    document.getElementById("input").value = "";
+});
+
+// Initial render
+render(engine.getState());
