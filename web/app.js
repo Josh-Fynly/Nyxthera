@@ -91,23 +91,51 @@ function render(state) {
 }
 
 // =============================
-// 5️⃣ User Input Hook
+// 5️⃣ Python AI Augmentation
 // =============================
-document.getElementById("send").addEventListener("click", () => {
-    const inputValue = document.getElementById("input").value.trim();
+async function callAISuggestion(userInput) {
+    try {
+        const resp = await fetch("http://127.0.0.1:8000/ai/suggest", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({input: userInput})
+        });
+        const data = await resp.json();
+        return data.vector || [0,0,0,0];
+    } catch(e) {
+        console.warn("AI service unavailable, continuing deterministically.");
+        return [0,0,0,0];
+    }
+}
 
-    // Simple input to vector mapping (placeholder)
+// =============================
+// 6️⃣ User Input Handler
+// =============================
+document.getElementById("send").addEventListener("click", async () => {
+    const inputValue = document.getElementById("input").value.trim();
+    document.getElementById("input").value = "";
+
+    // Step 1: Map input to deterministic vector
     let vector;
     if (!inputValue) vector = [0,0,0];
     else if (inputValue.toLowerCase().includes("good")) vector = [1,0,0];
     else if (inputValue.toLowerCase().includes("neutral")) vector = [0,1,0];
     else vector = [0,0,1];
 
-    const newState = engine.update(vector);
-    render(newState);
+    // Step 2: Update deterministic state
+    let newState = engine.update(vector);
 
-    document.getElementById("input").value = "";
+    // Step 3: Optional AI suggestion
+    const aiVector = await callAISuggestion(inputValue);
+
+    // Step 4: Apply bounded AI influence
+    newState = engine.update(aiVector.map(v => v*0.5));
+
+    // Step 5: Render
+    render(newState);
 });
 
-// Initial render
+// =============================
+// 7️⃣ Initial Render
+// =============================
 render(engine.getState());
