@@ -1,20 +1,20 @@
-from core.behavior import Behavior
+# main.py
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from services import personality
 
+app = FastAPI()
 
-def main():
-    behavior = Behavior()
-    print("Nyxthera is awake. Speak freely. Type 'exit' to leave.")
+# Allow local browser frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    while True:
-        user_input = input("You: ")
-
-        if user_input.lower() in ["exit", "quit"]:
-            print("Nyxthera watches as you depart.")
-            break
-
-        response = behavior.react_to_input(user_input)
-        print(f"Nyxthera: {response}")
-
-
-if __name__ == "__main__":
-    main()
+@app.post("/ai/suggest")
+def ai_suggest(data: dict):
+    user_input = data.get("input", "")
+    vector = personality.suggest(user_input)
+    return {"vector": vector}
