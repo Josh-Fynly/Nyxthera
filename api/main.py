@@ -7,7 +7,7 @@ from app.core.personality import Personality
 
 app = FastAPI()
 
-# Allow browser frontend
+# Allow browser frontend access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,6 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# initialize personality system
 personality = Personality()
 
 
@@ -22,8 +23,8 @@ personality = Personality()
 def ai_suggest(data: dict):
     user_input = data.get("input", "")
 
-    # Generate emotional vector suggestion
-    vector = personality.evolve(user_input)
+    # simple placeholder emotional vector
+    vector = personality.respond()
 
     return {
         "vector": vector
