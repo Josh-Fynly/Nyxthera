@@ -1,14 +1,23 @@
 // =============================
-// 1️⃣ Math Utilities
+// 🔹 Persistence Utilities
+// =============================
+function saveState(key, data) {
+    localStorage.setItem(key, JSON.stringify(data));
+}
+
+function loadState(key, fallback) {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : fallback;
+}
+
+// =============================
+// 🔹 Math Utilities
 // =============================
 function addVectors(a, b) {
-    if (a.length !== b.length) throw new Error("Vector size mismatch.");
     return a.map((v, i) => v + b[i]);
 }
 
 function multiplyMatrixVector(matrix, vector) {
-    if (matrix[0].length !== vector.length)
-        throw new Error("Matrix/vector dimension mismatch.");
     return matrix.map(row =>
         row.reduce((sum, val, i) => sum + val * vector[i], 0)
     );
@@ -19,7 +28,7 @@ function clampVector(v, min, max) {
 }
 
 // =============================
-// 2️⃣ Deterministic State Engine
+// 🔹 State Engine
 // =============================
 class StateEngine {
     constructor(initialState, A, B, bounds = [-1, 1]) {
@@ -44,7 +53,7 @@ class StateEngine {
 }
 
 // =============================
-// 3️⃣ Memory System
+// 🔹 Memory System
 // =============================
 class Memory {
     constructor(limit = 50) {
@@ -52,19 +61,21 @@ class Memory {
         this.logs = [];
     }
 
-    store(userInput, vector) {
-        const entry = {input: userInput, timestamp: Date.now(), vector};
-        this.logs.push(entry);
-        if (this.logs.length > this.limit) this.logs.shift();
-    }
+    store(input, state) {
+        this.logs.push({
+            input,
+            state,
+            time: Date.now()
+        });
 
-    getRecent(n = 5) {
-        return this.logs.slice(-n);
+        if (this.logs.length > this.limit) {
+            this.logs.shift();
+        }
     }
 }
 
 // =============================
-// 4️⃣ Growth Engine
+// 🔹 Growth System
 // =============================
 class Growth {
     constructor() {
@@ -73,31 +84,35 @@ class Growth {
     }
 
     registerInteraction() {
-        this.experience += 1;
+        this.experience++;
     }
 
-    evaluateStage(state) {
-        if (this.experience >= this.stage * 10) this.stage += 1;
+    evaluateStage() {
+        if (this.experience >= this.stage * 10) {
+            this.stage++;
+        }
     }
 
-    applyGrowthEffects(state) {
-        const factor = this.stage * 0.02;
-        state[1] = Math.min(state[1] + factor, 1); // engagement
-        state[3] = Math.min(state[3] + factor, 1); // affinity
+    apply(state) {
+        const boost = this.stage * 0.02;
+
+        state[1] = Math.min(state[1] + boost, 1); // engagement
+        state[3] = Math.min(state[3] + boost, 1); // affinity
+
         return state;
     }
 }
 
 // =============================
-// 5️⃣ Initialize
+// 🔹 Matrices
 // =============================
-const initialState = [0.6, 0.4, 0.5, 0.3];
 const A = [
     [0.85, 0.05, 0, 0],
     [0.05, 0.80, 0.05, 0],
     [0, 0.05, 0.85, 0.05],
     [0, 0, 0.05, 0.90]
 ];
+
 const B = [
     [0.2, 0, 0],
     [0, 0.3, 0],
@@ -105,100 +120,94 @@ const B = [
     [0.1, 0.1, 0.1]
 ];
 
-const engine = new StateEngine(initialState, A, B);
-const memory = new Memory();
-const growth = new Growth();
+// =============================
+// 🔹 Load Persisted Data
+// =============================
+const savedState = loadState("nyx_state", [0.6, 0.4, 0.5, 0.3]);
+const savedMemory = loadState("nyx_memory", []);
+const savedGrowth = loadState("nyx_growth", { stage: 1, experience: 0 });
 
 // =============================
-// 6️⃣ Rendering
+// 🔹 Initialize Systems
+// =============================
+const engine = new StateEngine(savedState, A, B);
+
+const memory = new Memory();
+memory.logs = savedMemory;
+
+const growth = new Growth();
+growth.stage = savedGrowth.stage;
+growth.experience = savedGrowth.experience;
+
+// =============================
+// 🔹 UI Elements
 // =============================
 const avatar = document.getElementById("avatar");
 const output = document.getElementById("output");
+const input = document.getElementById("input");
+const button = document.getElementById("send");
 
-function normalize(value) {
-    return (value + 1) / 2;
+// =============================
+// 🔹 Render Function
+// =============================
+function normalize(v) {
+    return (v + 1) / 2;
 }
 
 function render(state) {
     const [calm, engage, curiosity, affinity] = state;
 
-    const opacity = normalize(calm);
-    const scale = 0.8 + normalize(engage) * 0.4;
-    const hueShift = normalize(curiosity) * 60;
+    avatar.style.opacity = normalize(calm);
+    avatar.style.transform = `scale(${0.8 + normalize(engage) * 0.4})`;
+    avatar.style.background = `hsl(${200 + normalize(curiosity) * 60}, 70%, 60%)`;
 
-    avatar.style.opacity = opacity;
-    avatar.style.transform = `scale(${scale})`;
-    avatar.style.background = `hsl(${200 + hueShift}, 70%, 60%)`;
-
-    output.textContent = `Calm:${calm.toFixed(2)} Engage:${engage.toFixed(2)} Curiosity:${curiosity.toFixed(2)} Affinity:${affinity.toFixed(2)} | Growth Stage:${growth.stage}`;
+    output.textContent =
+        `Calm:${calm.toFixed(2)} | Engage:${engage.toFixed(2)} | ` +
+        `Curiosity:${curiosity.toFixed(2)} | Affinity:${affinity.toFixed(2)} | ` +
+        `Stage:${growth.stage}`;
 }
 
 // =============================
-// 7️⃣ Python AI Enhancement
+// 🔹 Input Mapping
 // =============================
-async function callAISuggestion(userInput) {
-    try {
-        const resp = await fetch("http://127.0.0.1:8000/ai/suggest", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({input: userInput})
-        });
-        const data = await resp.json();
-        return data.vector || [0,0,0,0];
-    } catch(e) {
-        console.warn("AI service unavailable, continuing deterministically.");
-        return [0,0,0,0];
-    }
-}
+function mapInput(text) {
+    text = text.toLowerCase();
 
-// Optional logging
-async function logInteraction(userInput, vector) {
-    try {
-        await fetch("http://127.0.0.1:8000/memory/update", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({input: userInput, vector})
-        });
-    } catch(e) {
-        console.warn("Memory API unavailable, skipping log.");
-    }
+    if (!text) return [0, 0, 0];
+    if (text.includes("good")) return [1, 0, 0];
+    if (text.includes("neutral")) return [0, 1, 0];
+    return [0, 0, 1];
 }
 
 // =============================
-// 8️⃣ Input Handler
+// 🔹 Event Handler
 // =============================
-document.getElementById("send").addEventListener("click", async () => {
-    const inputValue = document.getElementById("input").value.trim();
-    document.getElementById("input").value = "";
+button.addEventListener("click", () => {
+    const value = input.value.trim();
+    input.value = "";
 
-    // Deterministic vector mapping
-    let vector;
-    if (!inputValue) vector = [0,0,0];
-    else if (inputValue.toLowerCase().includes("good")) vector = [1,0,0];
-    else if (inputValue.toLowerCase().includes("neutral")) vector = [0,1,0];
-    else vector = [0,0,1];
+    const vector = mapInput(value);
 
-    // Update deterministic state
-    let newState = engine.update(vector);
+    let state = engine.update(vector);
 
-    // Optional AI perturbation
-    const aiVector = await callAISuggestion(inputValue);
-    newState = engine.update(aiVector.map(v => v*0.5));
+    memory.store(value, state);
 
-    // Register memory & growth
-    memory.store(inputValue, newState);
     growth.registerInteraction();
-    growth.evaluateStage(newState);
-    newState = growth.applyGrowthEffects(newState);
+    growth.evaluateStage();
+    state = growth.apply(state);
 
-    // Render
-    render(newState);
+    render(state);
 
-    // Optional log
-    logInteraction(inputValue, newState);
+    // 🔥 PERSIST EVERYTHING
+    saveState("nyx_state", engine.getState());
+    saveState("nyx_memory", memory.logs);
+    saveState("nyx_growth", {
+        stage: growth.stage,
+        experience: growth.experience
+    });
 });
 
 // =============================
-// 9️⃣ Initial Render
+// 🔹 Initial Render
 // =============================
 render(engine.getState());
