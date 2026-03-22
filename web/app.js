@@ -57,7 +57,7 @@ class StateEngine {
 }
 
 // =============================
-// 🔹 Memory System
+// 🔹 Memory
 // =============================
 class Memory {
     constructor(limit = 50) {
@@ -72,7 +72,7 @@ class Memory {
 }
 
 // =============================
-// 🔹 Growth System
+// 🔹 Growth
 // =============================
 class Growth {
     constructor() {
@@ -97,7 +97,7 @@ class Growth {
 }
 
 // =============================
-// 🔹 Personality Drift
+// 🔹 Drift
 // =============================
 class Drift {
     constructor(initial = [0, 0, 0, 0]) {
@@ -105,13 +105,10 @@ class Drift {
     }
 
     update(inputVector) {
-        // slow accumulation
-        this.vector[0] += inputVector[0] * 0.01; // emotional bias
+        this.vector[0] += inputVector[0] * 0.01;
         this.vector[1] += inputVector[1] * 0.005;
         this.vector[2] += inputVector[2] * 0.005;
         this.vector[3] += inputVector[0] * 0.008;
-
-        // clamp drift
         this.vector = clampVector(this.vector, -0.3, 0.3);
     }
 
@@ -121,7 +118,7 @@ class Drift {
 }
 
 // =============================
-// 🔹 Advanced Input Mapping
+// 🔹 Input Mapping
 // =============================
 function mapInput(text) {
     text = text.toLowerCase().trim();
@@ -133,7 +130,6 @@ function mapInput(text) {
     const social = ["hi","hello","hey","thanks","bye"];
 
     let score = { valence: 0, engagement: 0, curiosity: 0 };
-
     const words = text.split(/\s+/);
 
     words.forEach(word => {
@@ -172,7 +168,7 @@ const B = [
 ];
 
 // =============================
-// 🔹 Load Persisted Data
+// 🔹 Load Data
 // =============================
 const savedState = loadState("nyx_state", [0.6, 0.4, 0.5, 0.3]);
 const savedMemory = loadState("nyx_memory", []);
@@ -180,7 +176,7 @@ const savedGrowth = loadState("nyx_growth", { stage: 1, experience: 0 });
 const savedDrift = loadState("nyx_drift", [0, 0, 0, 0]);
 
 // =============================
-// 🔹 Initialize Systems
+// 🔹 Initialize
 // =============================
 const engine = new StateEngine(savedState, A, B);
 
@@ -194,7 +190,7 @@ growth.experience = savedGrowth.experience;
 const drift = new Drift(savedDrift);
 
 // =============================
-// 🔹 UI Elements
+// 🔹 UI
 // =============================
 const avatar = document.getElementById("avatar");
 const output = document.getElementById("output");
@@ -202,7 +198,7 @@ const input = document.getElementById("input");
 const button = document.getElementById("send");
 
 // =============================
-// 🔹 Render
+// 🔹 Render (Enhanced)
 // =============================
 function normalize(v) {
     return (v + 1) / 2;
@@ -211,9 +207,28 @@ function normalize(v) {
 function render(state) {
     const [calm, engage, curiosity, affinity] = state;
 
-    avatar.style.opacity = normalize(calm);
-    avatar.style.transform = `scale(${0.8 + normalize(engage) * 0.4})`;
-    avatar.style.background = `hsl(${200 + normalize(curiosity) * 60}, 70%, 60%)`;
+    const nCalm = normalize(calm);
+    const nEngage = normalize(engage);
+    const nCuriosity = normalize(curiosity);
+    const nAffinity = normalize(affinity);
+
+    // Opacity (calm)
+    avatar.style.opacity = 0.5 + nCalm * 0.5;
+
+    // Size (engagement)
+    const scale = 0.8 + nEngage * 0.5;
+    avatar.style.transform = `scale(${scale})`;
+
+    // Color (curiosity)
+    const hue = 200 + nCuriosity * 120;
+    avatar.style.background = `hsl(${hue}, 70%, 60%)`;
+
+    // Glow (affinity)
+    const glow = nAffinity * 20;
+    avatar.style.boxShadow = `0 0 ${glow}px rgba(0,150,255,0.7)`;
+
+    // Smooth animation
+    avatar.style.transition = "all 0.4s ease";
 
     output.textContent =
         `Calm:${calm.toFixed(2)} | Engage:${engage.toFixed(2)} | ` +
@@ -222,7 +237,7 @@ function render(state) {
 }
 
 // =============================
-// 🔹 Event Handler
+// 🔹 Interaction
 // =============================
 button.addEventListener("click", () => {
     const value = input.value.trim();
@@ -232,7 +247,6 @@ button.addEventListener("click", () => {
 
     let state = engine.update(vector);
 
-    // 🔥 APPLY DRIFT
     drift.update(vector);
     engine.applyDrift(drift.get());
 
@@ -244,7 +258,6 @@ button.addEventListener("click", () => {
 
     render(state);
 
-    // 🔥 Persist everything
     saveState("nyx_state", engine.getState());
     saveState("nyx_memory", memory.logs);
     saveState("nyx_growth", {
