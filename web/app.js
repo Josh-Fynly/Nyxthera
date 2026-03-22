@@ -47,6 +47,10 @@ class StateEngine {
         return this.state;
     }
 
+    applyDrift(drift) {
+        this.state = clampVector(addVectors(this.state, drift), this.min, this.max);
+    }
+
     getState() {
         return this.state;
     }
@@ -62,15 +66,8 @@ class Memory {
     }
 
     store(input, state) {
-        this.logs.push({
-            input,
-            state,
-            time: Date.now()
-        });
-
-        if (this.logs.length > this.limit) {
-            this.logs.shift();
-        }
+        this.logs.push({ input, state, time: Date.now() });
+        if (this.logs.length > this.limit) this.logs.shift();
     }
 }
 
@@ -88,19 +85,73 @@ class Growth {
     }
 
     evaluateStage() {
-        if (this.experience >= this.stage * 10) {
-            this.stage++;
-        }
+        if (this.experience >= this.stage * 10) this.stage++;
     }
 
     apply(state) {
         const boost = this.stage * 0.02;
-
-        state[1] = Math.min(state[1] + boost, 1); // engagement
-        state[3] = Math.min(state[3] + boost, 1); // affinity
-
+        state[1] = Math.min(state[1] + boost, 1);
+        state[3] = Math.min(state[3] + boost, 1);
         return state;
     }
+}
+
+// =============================
+// 🔹 Personality Drift
+// =============================
+class Drift {
+    constructor(initial = [0, 0, 0, 0]) {
+        this.vector = initial;
+    }
+
+    update(inputVector) {
+        // slow accumulation
+        this.vector[0] += inputVector[0] * 0.01; // emotional bias
+        this.vector[1] += inputVector[1] * 0.005;
+        this.vector[2] += inputVector[2] * 0.005;
+        this.vector[3] += inputVector[0] * 0.008;
+
+        // clamp drift
+        this.vector = clampVector(this.vector, -0.3, 0.3);
+    }
+
+    get() {
+        return this.vector;
+    }
+}
+
+// =============================
+// 🔹 Advanced Input Mapping
+// =============================
+function mapInput(text) {
+    text = text.toLowerCase().trim();
+    if (!text) return [0, 0, 0];
+
+    const positive = ["good","great","happy","love","awesome","amazing"];
+    const negative = ["bad","sad","angry","hate","tired","upset"];
+    const curiosity = ["why","how","what","help","explain"];
+    const social = ["hi","hello","hey","thanks","bye"];
+
+    let score = { valence: 0, engagement: 0, curiosity: 0 };
+
+    const words = text.split(/\s+/);
+
+    words.forEach(word => {
+        if (positive.includes(word)) score.valence += 1;
+        if (negative.includes(word)) score.valence -= 1;
+        if (curiosity.includes(word)) score.curiosity += 1;
+        if (social.includes(word)) score.engagement += 0.5;
+    });
+
+    score.engagement += Math.min(words.length / 10, 1);
+
+    const clamp = v => Math.max(-1, Math.min(1, v));
+
+    return [
+        clamp(score.valence / 3),
+        clamp(score.engagement),
+        clamp(score.curiosity / 2)
+    ];
 }
 
 // =============================
@@ -126,6 +177,7 @@ const B = [
 const savedState = loadState("nyx_state", [0.6, 0.4, 0.5, 0.3]);
 const savedMemory = loadState("nyx_memory", []);
 const savedGrowth = loadState("nyx_growth", { stage: 1, experience: 0 });
+const savedDrift = loadState("nyx_drift", [0, 0, 0, 0]);
 
 // =============================
 // 🔹 Initialize Systems
@@ -139,6 +191,8 @@ const growth = new Growth();
 growth.stage = savedGrowth.stage;
 growth.experience = savedGrowth.experience;
 
+const drift = new Drift(savedDrift);
+
 // =============================
 // 🔹 UI Elements
 // =============================
@@ -148,7 +202,7 @@ const input = document.getElementById("input");
 const button = document.getElementById("send");
 
 // =============================
-// 🔹 Render Function
+// 🔹 Render
 // =============================
 function normalize(v) {
     return (v + 1) / 2;
@@ -168,18 +222,6 @@ function render(state) {
 }
 
 // =============================
-// 🔹 Input Mapping
-// =============================
-function mapInput(text) {
-    text = text.toLowerCase();
-
-    if (!text) return [0, 0, 0];
-    if (text.includes("good")) return [1, 0, 0];
-    if (text.includes("neutral")) return [0, 1, 0];
-    return [0, 0, 1];
-}
-
-// =============================
 // 🔹 Event Handler
 // =============================
 button.addEventListener("click", () => {
@@ -190,6 +232,10 @@ button.addEventListener("click", () => {
 
     let state = engine.update(vector);
 
+    // 🔥 APPLY DRIFT
+    drift.update(vector);
+    engine.applyDrift(drift.get());
+
     memory.store(value, state);
 
     growth.registerInteraction();
@@ -198,13 +244,14 @@ button.addEventListener("click", () => {
 
     render(state);
 
-    // 🔥 PERSIST EVERYTHING
+    // 🔥 Persist everything
     saveState("nyx_state", engine.getState());
     saveState("nyx_memory", memory.logs);
     saveState("nyx_growth", {
         stage: growth.stage,
         experience: growth.experience
     });
+    saveState("nyx_drift", drift.get());
 });
 
 // =============================
