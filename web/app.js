@@ -85,7 +85,9 @@ class Growth {
     }
 
     evaluateStage() {
-        if (this.experience >= this.stage * 10) this.stage++;
+        if (this.experience >= this.stage * 10 && this.stage < 5) {
+            this.stage++;
+        }
     }
 
     apply(state) {
@@ -165,6 +167,21 @@ function generateResponse(state) {
 }
 
 // =============================
+// 🔹 Avatar Evolution
+// =============================
+function updateAvatar(stage) {
+    const stageMap = {
+        1: "assets/stage1.png",
+        2: "assets/stage2.png",
+        3: "assets/stage3.png",
+        4: "assets/stage4.png",
+        5: "assets/stage5.png"
+    };
+
+    avatarImage.src = stageMap[stage] || stageMap[1];
+}
+
+// =============================
 // 🔹 Matrices
 // =============================
 const A = [
@@ -193,6 +210,7 @@ const savedDrift = loadState("nyx_drift", [0, 0, 0, 0]);
 // 🔹 Initialize
 // =============================
 const engine = new StateEngine(savedState, A, B);
+
 const memory = new Memory();
 memory.logs = savedMemory;
 
@@ -203,9 +221,10 @@ growth.experience = savedGrowth.experience;
 const drift = new Drift(savedDrift);
 
 // =============================
-// 🔹 UI
+// 🔹 UI ELEMENTS
 // =============================
-const avatar = document.getElementById("avatar");
+const avatarWrapper = document.getElementById("avatarWrapper");
+const avatarImage = document.getElementById("avatarImage");
 const output = document.getElementById("output");
 const input = document.getElementById("input");
 const button = document.getElementById("send");
@@ -213,25 +232,22 @@ const button = document.getElementById("send");
 // =============================
 // 🔹 Render
 // =============================
-function normalize(v) {
-    return (v + 1) / 2;
-}
-
 function render(state) {
-    const [calm, engage, curiosity, affinity] = state;
+    const [_, __, ___, affinity] = state;
 
-    const nCalm = normalize(calm);
-    const nEngage = normalize(engage);
-    const nCuriosity = normalize(curiosity);
-    const nAffinity = normalize(affinity);
+    const nAffinity = (affinity + 1) / 2;
 
-    avatar.style.opacity = 0.5 + nCalm * 0.5;
-    avatar.style.transform = `scale(${0.8 + nEngage * 0.5})`;
-    avatar.style.background = `hsl(${200 + nCuriosity * 120}, 70%, 60%)`;
-    avatar.style.boxShadow = `0 0 ${nAffinity * 20}px rgba(0,150,255,0.7)`;
-    avatar.style.transition = "all 0.4s ease";
+    // Glow effect
+    if (nAffinity > 0.6) {
+        avatarWrapper.classList.add("glow");
+    } else {
+        avatarWrapper.classList.remove("glow");
+    }
 
-    // 🔥 HUMAN RESPONSE
+    // Stage-based avatar
+    updateAvatar(growth.stage);
+
+    // Natural response
     output.textContent = generateResponse(state);
 }
 
