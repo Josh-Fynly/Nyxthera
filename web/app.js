@@ -167,6 +167,82 @@ function generateResponse(state) {
 }
 
 // =============================
+// 🔹 Idle Message Generator
+// =============================
+function generateIdleMessage(state) {
+    const [calm, engage, curiosity, affinity] = state;
+
+    if (affinity > 0.6) {
+        return [
+            "I'm still here with you.",
+            "You can talk to me anytime.",
+            "I enjoy being with you."
+        ];
+    }
+
+    if (curiosity > 0.5) {
+        return [
+            "I'm wondering what you're thinking about...",
+            "Is there something on your mind?"
+        ];
+    }
+
+    if (calm > 0.5) {
+        return [
+            "It's quiet... I like this calm.",
+            "I'm here, just observing."
+        ];
+    }
+
+    return [
+        "I'm still here.",
+        "Whenever you're ready."
+    ];
+}
+
+// =============================
+// 🔹 Realism Layer
+// =============================
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function showTyping() {
+    const states = ["Nyxthera is thinking.", "Nyxthera is thinking..", "Nyxthera is thinking..."];
+    for (let i = 0; i < states.length; i++) {
+        output.textContent = states[i];
+        await sleep(300);
+    }
+}
+
+async function typeText(text) {
+    output.textContent = "";
+    for (let i = 0; i < text.length; i++) {
+        output.textContent += text[i];
+        await sleep(15 + Math.random() * 25);
+    }
+}
+
+// =============================
+// 🔹 Idle Engine
+// =============================
+let idleTimer = null;
+
+function resetIdleTimer() {
+    if (idleTimer) clearTimeout(idleTimer);
+
+    idleTimer = setTimeout(async () => {
+        const state = engine.getState();
+        const messages = generateIdleMessage(state);
+        const message = messages[Math.floor(Math.random() * messages.length)];
+
+        await sleep(300);
+        await typeText(message);
+
+    }, 8000 + Math.random() * 5000);
+}
+
+// =============================
 // 🔹 Avatar Evolution
 // =============================
 function updateAvatar(stage) {
@@ -221,7 +297,7 @@ growth.experience = savedGrowth.experience;
 const drift = new Drift(savedDrift);
 
 // =============================
-// 🔹 UI ELEMENTS
+// 🔹 UI
 // =============================
 const avatarWrapper = document.getElementById("avatarWrapper");
 const avatarImage = document.getElementById("avatarImage");
@@ -237,28 +313,32 @@ function render(state) {
 
     const nAffinity = (affinity + 1) / 2;
 
-    // Glow effect
     if (nAffinity > 0.6) {
         avatarWrapper.classList.add("glow");
     } else {
         avatarWrapper.classList.remove("glow");
     }
 
-    // Stage-based avatar
     updateAvatar(growth.stage);
-
-    // Natural response
-    output.textContent = generateResponse(state);
 }
 
 // =============================
 // 🔹 Interaction
 // =============================
-button.addEventListener("click", () => {
+button.addEventListener("click", async () => {
     const value = input.value.trim();
+    if (!value) return;
+
     input.value = "";
+    input.disabled = true;
+    button.disabled = true;
+
+    resetIdleTimer();
 
     const vector = mapInput(value);
+
+    await sleep(300 + Math.random() * 400);
+    await showTyping();
 
     let state = engine.update(vector);
 
@@ -273,6 +353,9 @@ button.addEventListener("click", () => {
 
     render(state);
 
+    const response = generateResponse(state);
+    await typeText(response);
+
     saveState("nyx_state", engine.getState());
     saveState("nyx_memory", memory.logs);
     saveState("nyx_growth", {
@@ -280,9 +363,16 @@ button.addEventListener("click", () => {
         experience: growth.experience
     });
     saveState("nyx_drift", drift.get());
+
+    input.disabled = false;
+    button.disabled = false;
+    input.focus();
+
+    resetIdleTimer();
 });
 
 // =============================
 // 🔹 Initial Render
 // =============================
 render(engine.getState());
+resetIdleTimer();
