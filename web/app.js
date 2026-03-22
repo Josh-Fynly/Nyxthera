@@ -151,6 +151,20 @@ function mapInput(text) {
 }
 
 // =============================
+// 🔹 Response Generator
+// =============================
+function generateResponse(state) {
+    const [calm, engage, curiosity, affinity] = state;
+
+    let tone = calm > 0.5 ? "I feel calm" : "I feel a bit tense";
+    let energy = engage > 0.5 ? "I'm engaged with you" : "I'm here quietly";
+    let warmth = affinity > 0.5 ? "I enjoy this moment with you" : "I'm still learning about you";
+    let curiosityLine = curiosity > 0.5 ? "Tell me more..." : "";
+
+    return `${tone}. ${energy}. ${warmth}. ${curiosityLine}`;
+}
+
+// =============================
 // 🔹 Matrices
 // =============================
 const A = [
@@ -179,7 +193,6 @@ const savedDrift = loadState("nyx_drift", [0, 0, 0, 0]);
 // 🔹 Initialize
 // =============================
 const engine = new StateEngine(savedState, A, B);
-
 const memory = new Memory();
 memory.logs = savedMemory;
 
@@ -198,7 +211,7 @@ const input = document.getElementById("input");
 const button = document.getElementById("send");
 
 // =============================
-// 🔹 Render (Enhanced)
+// 🔹 Render
 // =============================
 function normalize(v) {
     return (v + 1) / 2;
@@ -212,28 +225,14 @@ function render(state) {
     const nCuriosity = normalize(curiosity);
     const nAffinity = normalize(affinity);
 
-    // Opacity (calm)
     avatar.style.opacity = 0.5 + nCalm * 0.5;
-
-    // Size (engagement)
-    const scale = 0.8 + nEngage * 0.5;
-    avatar.style.transform = `scale(${scale})`;
-
-    // Color (curiosity)
-    const hue = 200 + nCuriosity * 120;
-    avatar.style.background = `hsl(${hue}, 70%, 60%)`;
-
-    // Glow (affinity)
-    const glow = nAffinity * 20;
-    avatar.style.boxShadow = `0 0 ${glow}px rgba(0,150,255,0.7)`;
-
-    // Smooth animation
+    avatar.style.transform = `scale(${0.8 + nEngage * 0.5})`;
+    avatar.style.background = `hsl(${200 + nCuriosity * 120}, 70%, 60%)`;
+    avatar.style.boxShadow = `0 0 ${nAffinity * 20}px rgba(0,150,255,0.7)`;
     avatar.style.transition = "all 0.4s ease";
 
-    output.textContent =
-        `Calm:${calm.toFixed(2)} | Engage:${engage.toFixed(2)} | ` +
-        `Curiosity:${curiosity.toFixed(2)} | Affinity:${affinity.toFixed(2)} | ` +
-        `Stage:${growth.stage}`;
+    // 🔥 HUMAN RESPONSE
+    output.textContent = generateResponse(state);
 }
 
 // =============================
