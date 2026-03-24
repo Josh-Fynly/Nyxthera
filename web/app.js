@@ -47,27 +47,8 @@ class StateEngine {
         return this.state;
     }
 
-    applyDrift(drift) {
-        this.state = clampVector(addVectors(this.state, drift), this.min, this.max);
-    }
-
     getState() {
         return this.state;
-    }
-}
-
-// =============================
-// 🔹 Memory
-// =============================
-class Memory {
-    constructor(limit = 50) {
-        this.limit = limit;
-        this.logs = [];
-    }
-
-    store(input, state) {
-        this.logs.push({ input, state, time: Date.now() });
-        if (this.logs.length > this.limit) this.logs.shift();
     }
 }
 
@@ -89,34 +70,6 @@ class Growth {
             this.stage++;
         }
     }
-
-    apply(state) {
-        const boost = this.stage * 0.02;
-        state[1] = Math.min(state[1] + boost, 1);
-        state[3] = Math.min(state[3] + boost, 1);
-        return state;
-    }
-}
-
-// =============================
-// 🔹 Drift
-// =============================
-class Drift {
-    constructor(initial = [0, 0, 0, 0]) {
-        this.vector = initial;
-    }
-
-    update(inputVector) {
-        this.vector[0] += inputVector[0] * 0.01;
-        this.vector[1] += inputVector[1] * 0.005;
-        this.vector[2] += inputVector[2] * 0.005;
-        this.vector[3] += inputVector[0] * 0.008;
-        this.vector = clampVector(this.vector, -0.3, 0.3);
-    }
-
-    get() {
-        return this.vector;
-    }
 }
 
 // =============================
@@ -126,22 +79,19 @@ function mapInput(text) {
     text = text.toLowerCase().trim();
     if (!text) return [0, 0, 0];
 
-    const positive = ["good","great","happy","love","awesome","amazing"];
-    const negative = ["bad","sad","angry","hate","tired","upset"];
-    const curiosity = ["why","how","what","help","explain"];
-    const social = ["hi","hello","hey","thanks","bye"];
+    const positive = ["good","great","happy","love"];
+    const negative = ["bad","sad","angry","hate"];
+    const curiosity = ["why","how","what","help"];
 
     let score = { valence: 0, engagement: 0, curiosity: 0 };
-    const words = text.split(/\s+/);
 
-    words.forEach(word => {
-        if (positive.includes(word)) score.valence += 1;
-        if (negative.includes(word)) score.valence -= 1;
-        if (curiosity.includes(word)) score.curiosity += 1;
-        if (social.includes(word)) score.engagement += 0.5;
+    text.split(/\s+/).forEach(word => {
+        if (positive.includes(word)) score.valence++;
+        if (negative.includes(word)) score.valence--;
+        if (curiosity.includes(word)) score.curiosity++;
     });
 
-    score.engagement += Math.min(words.length / 10, 1);
+    score.engagement = Math.min(text.length / 20, 1);
 
     const clamp = v => Math.max(-1, Math.min(1, v));
 
@@ -167,40 +117,6 @@ function generateResponse(state) {
 }
 
 // =============================
-// 🔹 Idle Message Generator
-// =============================
-function generateIdleMessage(state) {
-    const [calm, engage, curiosity, affinity] = state;
-
-    if (affinity > 0.6) {
-        return [
-            "I'm still here with you.",
-            "You can talk to me anytime.",
-            "I enjoy being with you."
-        ];
-    }
-
-    if (curiosity > 0.5) {
-        return [
-            "I'm wondering what you're thinking about...",
-            "Is there something on your mind?"
-        ];
-    }
-
-    if (calm > 0.5) {
-        return [
-            "It's quiet... I like this calm.",
-            "I'm here, just observing."
-        ];
-    }
-
-    return [
-        "I'm still here.",
-        "Whenever you're ready."
-    ];
-}
-
-// =============================
 // 🔹 Realism Layer
 // =============================
 function sleep(ms) {
@@ -209,16 +125,16 @@ function sleep(ms) {
 
 async function showTyping() {
     const states = ["Nyxthera is thinking.", "Nyxthera is thinking..", "Nyxthera is thinking..."];
-    for (let i = 0; i < states.length; i++) {
-        output.textContent = states[i];
+    for (let s of states) {
+        output.textContent = s;
         await sleep(300);
     }
 }
 
 async function typeText(text) {
     output.textContent = "";
-    for (let i = 0; i < text.length; i++) {
-        output.textContent += text[i];
+    for (let c of text) {
+        output.textContent += c;
         await sleep(15 + Math.random() * 25);
     }
 }
@@ -232,29 +148,8 @@ function resetIdleTimer() {
     if (idleTimer) clearTimeout(idleTimer);
 
     idleTimer = setTimeout(async () => {
-        const state = engine.getState();
-        const messages = generateIdleMessage(state);
-        const message = messages[Math.floor(Math.random() * messages.length)];
-
-        await sleep(300);
-        await typeText(message);
-
-    }, 8000 + Math.random() * 5000);
-}
-
-// =============================
-// 🔹 Avatar Evolution
-// =============================
-function updateAvatar(stage) {
-    const stageMap = {
-        1: "assets/stage1.png",
-        2: "assets/stage2.png",
-        3: "assets/stage3.png",
-        4: "assets/stage4.png",
-        5: "assets/stage5.png"
-    };
-
-    avatarImage.src = stageMap[stage] || stageMap[1];
+        await typeText("I'm still here...");
+    }, 10000);
 }
 
 // =============================
@@ -275,51 +170,68 @@ const B = [
 ];
 
 // =============================
-// 🔹 Load Data
+// 🔹 Load & Init
 // =============================
-const savedState = loadState("nyx_state", [0.6, 0.4, 0.5, 0.3]);
-const savedMemory = loadState("nyx_memory", []);
-const savedGrowth = loadState("nyx_growth", { stage: 1, experience: 0 });
-const savedDrift = loadState("nyx_drift", [0, 0, 0, 0]);
-
-// =============================
-// 🔹 Initialize
-// =============================
-const engine = new StateEngine(savedState, A, B);
-
-const memory = new Memory();
-memory.logs = savedMemory;
-
+const engine = new StateEngine(loadState("nyx_state", [0.6, 0.4, 0.5, 0.3]), A, B);
 const growth = new Growth();
-growth.stage = savedGrowth.stage;
-growth.experience = savedGrowth.experience;
 
-const drift = new Drift(savedDrift);
-
-// =============================
-// 🔹 UI
-// =============================
 const avatarWrapper = document.getElementById("avatarWrapper");
-const avatarImage = document.getElementById("avatarImage");
 const output = document.getElementById("output");
 const input = document.getElementById("input");
 const button = document.getElementById("send");
 
 // =============================
-// 🔹 Render
+// 🔹 Render (FINAL UPGRADE)
 // =============================
 function render(state) {
-    const [_, __, ___, affinity] = state;
+    const [calm, engage, curiosity, affinity] = state;
+    const stage = growth.stage;
 
-    const nAffinity = (affinity + 1) / 2;
+    const normalize = (v) => (v + 1) / 2;
 
-    if (nAffinity > 0.6) {
-        avatarWrapper.classList.add("glow");
+    const nCalm = normalize(calm);
+    const nEngage = normalize(engage);
+    const nCuriosity = normalize(curiosity);
+    const nAffinity = normalize(affinity);
+
+    const size = 120 + stage * 15;
+
+    avatarWrapper.style.width = size + "px";
+    avatarWrapper.style.height = size + "px";
+    avatarWrapper.style.margin = "0 auto";
+    avatarWrapper.style.borderRadius = "50%";
+
+    const hue = 200 + nCuriosity * 120;
+    const innerLight = 60 + nCalm * 10;
+    const outerDark = 15 + nCalm * 10;
+
+    avatarWrapper.style.background = `
+        radial-gradient(circle at center,
+        hsl(${hue}, 70%, ${innerLight}%),
+        hsl(220, 60%, ${outerDark}%))
+    `;
+
+    const glowStrength = 10 + stage * 10;
+    const glowAlpha = 0.2 + nAffinity * 0.6;
+
+    avatarWrapper.style.boxShadow = `
+        0 0 ${glowStrength}px rgba(0,150,255,${glowAlpha}),
+        0 0 ${glowStrength * 2}px rgba(0,150,255,${glowAlpha * 0.6})
+    `;
+
+    const breatheSpeed = 3 - nCalm * 1.5;
+
+    avatarWrapper.style.animation = `
+        breathe ${breatheSpeed}s ease-in-out infinite
+    `;
+
+    if (nEngage > 0.6) {
+        avatarWrapper.classList.add("pulse");
     } else {
-        avatarWrapper.classList.remove("glow");
+        avatarWrapper.classList.remove("pulse");
     }
 
-    updateAvatar(growth.stage);
+    avatarWrapper.style.transition = "all 0.5s ease";
 }
 
 // =============================
@@ -335,34 +247,19 @@ button.addEventListener("click", async () => {
 
     resetIdleTimer();
 
-    const vector = mapInput(value);
-
-    await sleep(300 + Math.random() * 400);
+    await sleep(300);
     await showTyping();
 
-    let state = engine.update(vector);
-
-    drift.update(vector);
-    engine.applyDrift(drift.get());
-
-    memory.store(value, state);
+    let state = engine.update(mapInput(value));
 
     growth.registerInteraction();
     growth.evaluateStage();
-    state = growth.apply(state);
 
     render(state);
 
-    const response = generateResponse(state);
-    await typeText(response);
+    await typeText(generateResponse(state));
 
     saveState("nyx_state", engine.getState());
-    saveState("nyx_memory", memory.logs);
-    saveState("nyx_growth", {
-        stage: growth.stage,
-        experience: growth.experience
-    });
-    saveState("nyx_drift", drift.get());
 
     input.disabled = false;
     button.disabled = false;
@@ -372,7 +269,7 @@ button.addEventListener("click", async () => {
 });
 
 // =============================
-// 🔹 Initial Render
+// 🔹 Start
 // =============================
 render(engine.getState());
 resetIdleTimer();
