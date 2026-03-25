@@ -1,99 +1,149 @@
-/* =============================
-   🔹 Base Layout
-============================= */
+/* ============================= */
+/* 🔹 Global Styles */
+/* ============================= */
 body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: radial-gradient(circle at center, #0a0f1c, #05070d);
-  color: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background: radial-gradient(circle at center, #0b1a2a, #02070d);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
 }
 
-/* =============================
-   🔹 Container
-============================= */
+/* Container */
 #container {
-  text-align: center;
-  width: 90%;
-  max-width: 400px;
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
 }
 
-/* =============================
-   🔹 Avatar Wrapper (CORE VISUAL)
-============================= */
-#avatarWrapper {
-  width: 150px;
-  height: 150px;
-  margin: 0 auto 10px;
-  border-radius: 50%;
-
-  /* Smooth transitions */
-  transition: all 0.5s ease;
-
-  /* Default fallback background */
-  background: radial-gradient(circle, #1a2a4a, #05070d);
+/* ============================= */
+/* 🔹 Avatar Base */
+/* ============================= */
+#avatar {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    transition: all 0.5s ease;
 }
 
-/* =============================
-   🔹 Pulse Effect (Triggered via JS)
-============================= */
-.pulse {
-  animation: pulseAnim 0.6s ease;
+/* ============================= */
+/* 🔹 Stage 1 — Orb (Birth) */
+/* ============================= */
+.stage1 {
+    background: radial-gradient(circle, #4fc3f7, #0d47a1);
+    box-shadow: 0 0 20px rgba(79, 195, 247, 0.6);
 }
 
-@keyframes pulseAnim {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.15); }
-  100% { transform: scale(1); }
+/* ============================= */
+/* 🔹 Stage 2 — Awareness */
+/* ============================= */
+.stage2 {
+    background: radial-gradient(circle, #81d4fa, #1565c0);
+    box-shadow: 0 0 30px rgba(129, 212, 250, 0.7);
+    position: relative;
 }
 
-/* =============================
-   🔹 Dialogue Section
-============================= */
-#dialogue {
-  margin-top: 20px;
+.stage2::after {
+    content: "";
+    position: absolute;
+    top: 40%;
+    left: 30%;
+    width: 15px;
+    height: 15px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 30px 0 white;
 }
 
+/* ============================= */
+/* 🔹 Stage 3 — Personality */
+/* ============================= */
+.stage3 {
+    background: radial-gradient(circle, #4dd0e1, #006064);
+    box-shadow: 0 0 40px rgba(77, 208, 225, 0.9);
+    animation: pulse 2s infinite;
+}
+
+/* ============================= */
+/* 🔹 Stage 4 — Intelligence */
+/* ============================= */
+.stage4 {
+    background: linear-gradient(135deg, #00e5ff, #1de9b6);
+    box-shadow: 0 0 50px rgba(0, 229, 255, 1);
+    animation: float 3s ease-in-out infinite;
+}
+
+/* ============================= */
+/* 🔹 Stage 5 — Full Companion */
+/* ============================= */
+.stage5 {
+    background: linear-gradient(135deg, #00e5ff, #7c4dff);
+    box-shadow: 0 0 60px rgba(124, 77, 255, 1),
+                0 0 100px rgba(0, 229, 255, 0.8);
+    animation: pulse 1.5s infinite, float 4s infinite;
+}
+
+/* ============================= */
+/* 🔹 Animations */
+/* ============================= */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+/* ============================= */
+/* 🔹 Text & Input */
+/* ============================= */
 #output {
-  margin-bottom: 10px;
-  min-height: 50px;
-  line-height: 1.4;
+    margin-bottom: 20px;
+    font-size: 16px;
+    opacity: 0.9;
 }
 
-/* =============================
-   🔹 Input Area
-============================= */
 #input {
-  width: 70%;
-  padding: 8px;
-  border-radius: 6px;
-  border: none;
-  outline: none;
+    width: 70%;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
 }
 
 #send {
-  padding: 8px 12px;
-  margin-left: 5px;
-  cursor: pointer;
-  border: none;
-  border-radius: 6px;
-  background: #0a84ff;
-  color: white;
-  transition: background 0.3s ease;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    background: #2196f3;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
 }
 
 #send:hover {
-  background: #006fe0;
-}
-
-/* =============================
-   🔹 Breathing Animation (USED BY JS)
-============================= */
-@keyframes breathe {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.05); }
-  100% { transform: scale(1); }
+    background: #1976d2;
 }
