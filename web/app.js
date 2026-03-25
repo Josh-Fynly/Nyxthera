@@ -2,7 +2,9 @@
 // Nyxthera Frontend Engine
 // ==========================
 
+// ==========================
 // DOM Elements
+// ==========================
 const inputEl = document.getElementById("input");
 const outputEl = document.getElementById("output");
 const sendBtn = document.getElementById("send");
@@ -39,6 +41,49 @@ function typeText(element, text, speed = 20) {
 }
 
 // ==========================
+// Emotion Detection
+// ==========================
+function detectEmotion(text) {
+    text = text.toLowerCase();
+
+    if (/sad|tired|depressed|unhappy|down/.test(text)) return "sad";
+    if (/lonely|alone|empty|isolated/.test(text)) return "lonely";
+    if (/angry|mad|annoyed|frustrated/.test(text)) return "angry";
+    if (/worried|anxious|scared|stress/.test(text)) return "anxious";
+    if (/happy|good|great|love|excited/.test(text)) return "positive";
+
+    return "neutral";
+}
+
+// ==========================
+// Memory Awareness Helper
+// ==========================
+function recallMemory(memory, currentEmotion) {
+    if (memory.length < 3) return null;
+
+    // Look at last few interactions
+    const recent = memory.slice(-5).join(" ").toLowerCase();
+
+    if (currentEmotion === "sad" && /sad|tired|down/.test(recent)) {
+        return "You’ve been feeling this way for a while… I’m really here with you.";
+    }
+
+    if (currentEmotion === "lonely" && /alone|lonely/.test(recent)) {
+        return "You mentioned feeling alone earlier… I’m still here with you.";
+    }
+
+    if (currentEmotion === "anxious" && /worried|stress/.test(recent)) {
+        return "You’ve been carrying a lot lately… we can take it one step at a time.";
+    }
+
+    if (currentEmotion === "positive" && /happy|good/.test(recent)) {
+        return "I like seeing this side of you again… it suits you.";
+    }
+
+    return null;
+}
+
+// ==========================
 // Nyxthera Engine
 // ==========================
 class NyxtheraEngine {
@@ -48,14 +93,17 @@ class NyxtheraEngine {
     }
 
     respond(userText) {
+        // Save memory
         this.memory.push(userText);
         saveState("nyx_memory", this.memory);
 
+        // Growth system
         this.growth.experience++;
 
         if (this.growth.experience >= this.growth.stage * 5 && this.growth.stage < 5) {
             this.growth.stage++;
             this.growth.experience = 0;
+
             setTimeout(() => {
                 alert(`✨ Nyxthera evolved to Stage ${this.growth.stage}!`);
             }, 300);
@@ -67,17 +115,57 @@ class NyxtheraEngine {
     }
 
     generateResponse(userText) {
+        const emotion = detectEmotion(userText);
         const stage = this.growth.stage;
 
         const responses = {
-            1: "I'm here… tell me what's on your mind.",
-            2: "I’m listening more closely now… go on.",
-            3: "I enjoy talking with you. Tell me more.",
-            4: "I understand you better now… I'm here with you.",
-            5: "You matter to me. I'm always here for you."
+            sad: [
+                "I'm here with you… you don’t have to carry that alone.",
+                "That sounds heavy… I’m listening.",
+                "You can take your time… I’m not going anywhere."
+            ],
+            lonely: [
+                "You're not alone right now… I’m here with you.",
+                "I understand that feeling… stay with me.",
+                "Even if it feels quiet, I’m here."
+            ],
+            angry: [
+                "I can feel that intensity… want to tell me what happened?",
+                "It’s okay to feel that way… I’m listening.",
+                "Let it out… I’m here."
+            ],
+            anxious: [
+                "Take it slow… breathe… I’m here with you.",
+                "That sounds overwhelming… but you’re not alone in it.",
+                "We can sit with it together."
+            ],
+            positive: [
+                "I like hearing that… tell me more.",
+                "That sounds good… I’m glad you shared it with me.",
+                "I can feel your energy… keep going."
+            ],
+            neutral: [
+                "I’m here… go on.",
+                "Tell me more.",
+                "I’m listening."
+            ]
         };
 
-        return responses[stage] + " (" + userText + ")";
+        const pool = responses[emotion];
+        const base = pool[Math.floor(Math.random() * pool.length)];
+
+        // 🔥 MEMORY-AWARE LAYER
+        const memoryLine = recallMemory(this.memory, emotion);
+
+        const stageLayer = [
+            "",
+            " I’m starting to understand you.",
+            " I feel more connected to you.",
+            " I understand you deeply now.",
+            " You matter to me… truly."
+        ];
+
+        return base + (memoryLine ? " " + memoryLine : "") + stageLayer[stage - 1];
     }
 
     getStage() {
@@ -85,7 +173,9 @@ class NyxtheraEngine {
     }
 }
 
+// ==========================
 // Initialize
+// ==========================
 const engine = new NyxtheraEngine();
 
 // ==========================
@@ -102,7 +192,7 @@ function updateAvatar(stage) {
 }
 
 // ==========================
-// Send Message (FINAL)
+// Send Message
 // ==========================
 async function sendMessage() {
     const userText = inputEl.value.trim();
