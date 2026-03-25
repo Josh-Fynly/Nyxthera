@@ -1,3 +1,6 @@
+
+console.log("App loaded");
+
 // =============================
 // 🔹 Persistence Utilities
 // =============================
