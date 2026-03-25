@@ -1,16 +1,15 @@
-// app.js
-// Nyxthera: AI-Enhanced Virtual Companion (Frontend Layer)
+// ==========================
+// Nyxthera Frontend Engine
+// ==========================
 
-// ==========================
 // DOM Elements
-// ==========================
 const inputEl = document.getElementById("input");
 const outputEl = document.getElementById("output");
 const sendBtn = document.getElementById("send");
 const avatarEl = document.getElementById("avatar");
 
 // ==========================
-// Persistence Helpers
+// Persistence
 // ==========================
 function saveState(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
@@ -19,6 +18,24 @@ function saveState(key, value) {
 function loadState(key, defaultValue) {
     const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : defaultValue;
+}
+
+// ==========================
+// Typing Effect
+// ==========================
+function typeText(element, text, speed = 20) {
+    element.innerText = "";
+    let i = 0;
+
+    function typing() {
+        if (i < text.length) {
+            element.innerText += text.charAt(i);
+            i++;
+            setTimeout(typing, speed);
+        }
+    }
+
+    typing();
 }
 
 // ==========================
@@ -31,23 +48,36 @@ class NyxtheraEngine {
     }
 
     respond(userText) {
-        // Store memory
         this.memory.push(userText);
         saveState("nyx_memory", this.memory);
 
-        // Simulate growth points per interaction
-        this.growth.experience += 1;
+        this.growth.experience++;
 
-        // Upgrade stage every 5 points
         if (this.growth.experience >= this.growth.stage * 5 && this.growth.stage < 5) {
-            this.growth.stage += 1;
+            this.growth.stage++;
             this.growth.experience = 0;
-            alert(`Nyxthera evolved to Stage ${this.growth.stage}!`);
+            setTimeout(() => {
+                alert(`✨ Nyxthera evolved to Stage ${this.growth.stage}!`);
+            }, 300);
         }
 
         saveState("nyx_growth", this.growth);
 
-        return `Nyxthera (Stage ${this.growth.stage}) heard: ${userText}`;
+        return this.generateResponse(userText);
+    }
+
+    generateResponse(userText) {
+        const stage = this.growth.stage;
+
+        const responses = {
+            1: "I'm here… tell me what's on your mind.",
+            2: "I’m listening more closely now… go on.",
+            3: "I enjoy talking with you. Tell me more.",
+            4: "I understand you better now… I'm here with you.",
+            5: "You matter to me. I'm always here for you."
+        };
+
+        return responses[stage] + " (" + userText + ")";
     }
 
     getStage() {
@@ -55,68 +85,63 @@ class NyxtheraEngine {
     }
 }
 
-// Initialize engine
+// Initialize
 const engine = new NyxtheraEngine();
 
 // ==========================
-// Visual Layer (Avatar)
+// Avatar System
 // ==========================
 function updateAvatar(stage) {
-    // Clear previous classes
     avatarEl.className = "";
-    
-    switch(stage) {
-        case 1:
-            avatarEl.classList.add("stage1"); // glowing orb
-            break;
-        case 2:
-            avatarEl.classList.add("stage2"); // subtle eyes
-            break;
-        case 3:
-            avatarEl.classList.add("stage3"); // animated patterns
-            break;
-        case 4:
-            avatarEl.classList.add("stage4"); // reflective aura
-            break;
-        case 5:
-            avatarEl.classList.add("stage5"); // fully dynamic companion
-            break;
-        default:
-            avatarEl.classList.add("stage1");
-    }
+
+    if (stage === 1) avatarEl.classList.add("stage1");
+    if (stage === 2) avatarEl.classList.add("stage2");
+    if (stage === 3) avatarEl.classList.add("stage3");
+    if (stage === 4) avatarEl.classList.add("stage4");
+    if (stage === 5) avatarEl.classList.add("stage5");
 }
 
-// Initialize avatar on load
-updateAvatar(engine.getStage());
-
 // ==========================
-// Event Handlers
+// Send Message (FINAL)
 // ==========================
-function sendMessage() {
+async function sendMessage() {
     const userText = inputEl.value.trim();
     if (!userText) return;
 
-    const response = engine.respond(userText);
+    inputEl.disabled = true;
+    sendBtn.disabled = true;
 
-    // Render response
-    outputEl.innerText = response;
-
-    // Clear input
     inputEl.value = "";
 
-    // Update avatar visually based on stage
+    outputEl.innerText = "Nyxthera is thinking...";
+
+    await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 700));
+
+    const response = engine.respond(userText);
+
+    typeText(outputEl, response, 20);
+
     updateAvatar(engine.getStage());
+
+    inputEl.disabled = false;
+    sendBtn.disabled = false;
+    inputEl.focus();
 }
 
-// Button click
+// ==========================
+// Events
+// ==========================
 sendBtn.addEventListener("click", sendMessage);
 
-// Enter key
 inputEl.addEventListener("keydown", (e) => {
     if (e.key === "Enter") sendMessage();
 });
 
-// Load memory preview
+// ==========================
+// Initial Load
+// ==========================
+updateAvatar(engine.getStage());
+
 if (engine.memory.length > 0) {
-    outputEl.innerText = `Nyxthera remembers: ${engine.memory.join(", ")}`;
+    outputEl.innerText = "Nyxthera remembers you…";
 }
