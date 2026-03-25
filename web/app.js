@@ -1,228 +1,122 @@
-console.log("App loaded");
+// app.js
+// Nyxthera: AI-Enhanced Virtual Companion (Frontend Layer)
 
-// Wait until DOM is fully loaded
-document.addEventListener("DOMContentLoaded", () => {
+// ==========================
+// DOM Elements
+// ==========================
+const inputEl = document.getElementById("input");
+const outputEl = document.getElementById("output");
+const sendBtn = document.getElementById("send");
+const avatarEl = document.getElementById("avatar");
 
-    // =============================
-    // 🔹 Persistence Utilities
-    // =============================
-    function saveState(key, data) {
-        localStorage.setItem(key, JSON.stringify(data));
+// ==========================
+// Persistence Helpers
+// ==========================
+function saveState(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+}
+
+function loadState(key, defaultValue) {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : defaultValue;
+}
+
+// ==========================
+// Nyxthera Engine
+// ==========================
+class NyxtheraEngine {
+    constructor() {
+        this.memory = loadState("nyx_memory", []);
+        this.growth = loadState("nyx_growth", { stage: 1, experience: 0 });
     }
 
-    function loadState(key, fallback) {
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : fallback;
-    }
+    respond(userText) {
+        // Store memory
+        this.memory.push(userText);
+        saveState("nyx_memory", this.memory);
 
-    // =============================
-    // 🔹 Math Utilities
-    // =============================
-    function addVectors(a, b) {
-        return a.map((v, i) => v + b[i]);
-    }
+        // Simulate growth points per interaction
+        this.growth.experience += 1;
 
-    function multiplyMatrixVector(matrix, vector) {
-        return matrix.map(row =>
-            row.reduce((sum, val, i) => sum + val * vector[i], 0)
-        );
-    }
-
-    function clampVector(v, min, max) {
-        return v.map(val => Math.max(min, Math.min(max, val)));
-    }
-
-    // =============================
-    // 🔹 State Engine
-    // =============================
-    class StateEngine {
-        constructor(initialState, A, B, bounds = [-1, 1]) {
-            this.state = initialState;
-            this.A = A;
-            this.B = B;
-            this.min = bounds[0];
-            this.max = bounds[1];
+        // Upgrade stage every 5 points
+        if (this.growth.experience >= this.growth.stage * 5 && this.growth.stage < 5) {
+            this.growth.stage += 1;
+            this.growth.experience = 0;
+            alert(`Nyxthera evolved to Stage ${this.growth.stage}!`);
         }
 
-        update(inputVector) {
-            const internal = multiplyMatrixVector(this.A, this.state);
-            const influence = multiplyMatrixVector(this.B, inputVector);
-            const next = addVectors(internal, influence);
-            this.state = clampVector(next, this.min, this.max);
-            return this.state;
-        }
+        saveState("nyx_growth", this.growth);
 
-        getState() {
-            return this.state;
-        }
+        return `Nyxthera (Stage ${this.growth.stage}) heard: ${userText}`;
     }
 
-    // =============================
-    // 🔹 Growth
-    // =============================
-    class Growth {
-        constructor() {
-            this.stage = 1;
-            this.experience = 0;
-        }
-
-        registerInteraction() {
-            this.experience++;
-        }
-
-        evaluateStage() {
-            if (this.experience >= this.stage * 10 && this.stage < 5) {
-                this.stage++;
-            }
-        }
+    getStage() {
+        return this.growth.stage;
     }
+}
 
-    // =============================
-    // 🔹 Input Mapping
-    // =============================
-    function mapInput(text) {
-        text = text.toLowerCase().trim();
-        if (!text) return [0, 0, 0];
+// Initialize engine
+const engine = new NyxtheraEngine();
 
-        const positive = ["good","great","happy","love"];
-        const negative = ["bad","sad","angry","hate"];
-        const curiosity = ["why","how","what","help"];
-
-        let score = { valence: 0, engagement: 0, curiosity: 0 };
-
-        text.split(/\s+/).forEach(word => {
-            if (positive.includes(word)) score.valence++;
-            if (negative.includes(word)) score.valence--;
-            if (curiosity.includes(word)) score.curiosity++;
-        });
-
-        score.engagement = Math.min(text.length / 20, 1);
-
-        const clamp = v => Math.max(-1, Math.min(1, v));
-
-        return [
-            clamp(score.valence / 3),
-            clamp(score.engagement),
-            clamp(score.curiosity / 2)
-        ];
+// ==========================
+// Visual Layer (Avatar)
+// ==========================
+function updateAvatar(stage) {
+    // Clear previous classes
+    avatarEl.className = "";
+    
+    switch(stage) {
+        case 1:
+            avatarEl.classList.add("stage1"); // glowing orb
+            break;
+        case 2:
+            avatarEl.classList.add("stage2"); // subtle eyes
+            break;
+        case 3:
+            avatarEl.classList.add("stage3"); // animated patterns
+            break;
+        case 4:
+            avatarEl.classList.add("stage4"); // reflective aura
+            break;
+        case 5:
+            avatarEl.classList.add("stage5"); // fully dynamic companion
+            break;
+        default:
+            avatarEl.classList.add("stage1");
     }
+}
 
-    // =============================
-    // 🔹 Response Generator
-    // =============================
-    function generateResponse(state) {
-        const [calm, engage, curiosity, affinity] = state;
+// Initialize avatar on load
+updateAvatar(engine.getStage());
 
-        let tone = calm > 0.5 ? "I feel calm" : "I feel a bit tense";
-        let energy = engage > 0.5 ? "I'm engaged with you" : "I'm here quietly";
-        let warmth = affinity > 0.5 ? "I enjoy this moment with you" : "I'm still learning about you";
-        let curiosityLine = curiosity > 0.5 ? "Tell me more..." : "";
+// ==========================
+// Event Handlers
+// ==========================
+function sendMessage() {
+    const userText = inputEl.value.trim();
+    if (!userText) return;
 
-        return `${tone}. ${energy}. ${warmth}. ${curiosityLine}`;
-    }
+    const response = engine.respond(userText);
 
-    // =============================
-    // 🔹 Realism
-    // =============================
-    function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
+    // Render response
+    outputEl.innerText = response;
 
-    async function showTyping(output) {
-        const states = ["Nyxthera is thinking.", "Nyxthera is thinking..", "Nyxthera is thinking..."];
-        for (let s of states) {
-            output.textContent = s;
-            await sleep(300);
-        }
-    }
+    // Clear input
+    inputEl.value = "";
 
-    async function typeText(output, text) {
-        output.textContent = "";
-        for (let c of text) {
-            output.textContent += c;
-            await sleep(20);
-        }
-    }
+    // Update avatar visually based on stage
+    updateAvatar(engine.getStage());
+}
 
-    // =============================
-    // 🔹 Matrices
-    // =============================
-    const A = [
-        [0.85, 0.05, 0, 0],
-        [0.05, 0.80, 0.05, 0],
-        [0, 0.05, 0.85, 0.05],
-        [0, 0, 0.05, 0.90]
-    ];
+// Button click
+sendBtn.addEventListener("click", sendMessage);
 
-    const B = [
-        [0.2, 0, 0],
-        [0, 0.3, 0],
-        [0, 0, 0.3],
-        [0.1, 0.1, 0.1]
-    ];
-
-    // =============================
-    // 🔹 Init
-    // =============================
-    const engine = new StateEngine(loadState("nyx_state", [0.6, 0.4, 0.5, 0.3]), A, B);
-    const growth = new Growth();
-
-    const avatarWrapper = document.getElementById("avatarWrapper");
-    const output = document.getElementById("output");
-    const input = document.getElementById("input");
-    const button = document.getElementById("send");
-
-    // =============================
-    // 🔹 Render
-    // =============================
-    function render(state) {
-        const [calm, engage, curiosity, affinity] = state;
-        const stage = growth.stage;
-
-        const n = (v) => (v + 1) / 2;
-
-        const size = 120 + stage * 15;
-        avatarWrapper.style.width = size + "px";
-        avatarWrapper.style.height = size + "px";
-
-        avatarWrapper.style.background = `radial-gradient(circle,
-            hsl(${200 + n(curiosity) * 120}, 70%, 60%),
-            hsl(220, 60%, 20%))`;
-
-        avatarWrapper.style.boxShadow =
-            `0 0 ${10 + stage * 10}px rgba(0,150,255,${0.3 + n(affinity) * 0.5})`;
-
-        avatarWrapper.style.borderRadius = "50%";
-    }
-
-    // =============================
-    // 🔹 Interaction (FIXED)
-    // =============================
-    button.addEventListener("click", async () => {
-        console.log("Button clicked");
-
-        const value = input.value.trim();
-        if (!value) return;
-
-        input.value = "";
-
-        await showTyping(output);
-
-        let state = engine.update(mapInput(value));
-
-        growth.registerInteraction();
-        growth.evaluateStage();
-
-        render(state);
-
-        await typeText(output, generateResponse(state));
-
-        saveState("nyx_state", engine.getState());
-    });
-
-    // =============================
-    // 🔹 Start
-    // =============================
-    render(engine.getState());
-
+// Enter key
+inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendMessage();
 });
+
+// Load memory preview
+if (engine.memory.length > 0) {
+    outputEl.innerText = `Nyxthera remembers: ${engine.memory.join(", ")}`;
+}
