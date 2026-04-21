@@ -1,15 +1,12 @@
-# ==========================
-# Nyxthera AI Backend
-# ==========================
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
-import requests
+
+from app.core.memory import Memory
+from app.core.state import State
+from app.core.ai import generate_response
 
 app = FastAPI()
 
-# Allow frontend access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,48 +14,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ==========================
-# CONFIG
-# ==========================
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+memory = Memory()
+state = State()
 
-# ==========================
-# AI RESPONSE ENDPOINT
-# ==========================
+
+@app.get("/")
+def root():
+    return {"status": "Nyxthera AI Active"}
+
+
 @app.post("/ai/respond")
 def ai_respond(data: dict):
     user_input = data.get("input", "")
 
-    if not OPENAI_API_KEY:
-        return {"error": "No API key configured"}
+    # Update emotional state
+    state.update(user_input)
 
-    try:
-        response = requests.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {OPENAI_API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": "gpt-4o-mini",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "You are Nyxthera, an emotionally intelligent AI companion. Be warm, supportive, calm, and human-like."
-                    },
-                    {
-                        "role": "user",
-                        "content": user_input
-                    }
-                ]
-            }
-        )
+    # Generate AI response
+    response = generate_response(user_input, memory, state)
 
-        result = response.json()
+    # Save memory
+    memory.add(user_input, response)
 
-        ai_text = result["choices"][0]["message"]["content"]
-
-        return {"response": ai_text}
-
-    except Exception as e:
-        return {"error": str(e)}
+    return {
+        "response": response,
+        "state": state.get()
+    }
