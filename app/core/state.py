@@ -1,31 +1,23 @@
-import json
-import os
+class State:
+    def __init__(self):
+        # [calm, happy, sad, attached]
+        self.vector = [0.6, 0.4, 0.3, 0.2]
 
+    def update(self, user_input: str):
+        text = user_input.lower()
 
-class StateManager:
-    FILE = "nyxthera_state.json"
+        if "sad" in text or "lonely" in text:
+            self.vector[2] += 0.1  # sadness
+            self.vector[0] -= 0.05
 
-    @classmethod
-    def save(cls, personality):
-        data = {
-            "trust": personality.trust,
-            "bond": personality.bond,
-            "energy": personality.energy,
-            "health": personality.health
-        }
+        if "happy" in text:
+            self.vector[1] += 0.1
 
-        with open(cls.FILE, "w") as f:
-            json.dump(data, f)
+        if "miss you" in text or "love" in text:
+            self.vector[3] += 0.1  # attachment
 
-    @classmethod
-    def load(cls, personality):
-        if not os.path.exists(cls.FILE):
-            return
+        # clamp values
+        self.vector = [max(0, min(1, v)) for v in self.vector]
 
-        with open(cls.FILE, "r") as f:
-            data = json.load(f)
-
-        personality.trust = data.get("trust", personality.trust)
-        personality.bond = data.get("bond", personality.bond)
-        personality.energy = data.get("energy", personality.energy)
-        personality.health = data.get("health", personality.health)
+    def get(self):
+        return self.vector
