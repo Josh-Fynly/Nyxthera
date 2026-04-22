@@ -1,34 +1,31 @@
-from collections import deque
-
+import json
+import os
 
 class Memory:
-    """
-    Short-term conversational memory.
-    Stores recent user inputs and emotional context.
-    """
+    def __init__(self, path="data/memory.json"):
+        self.path = path
+        self.logs = self.load()
 
-    def __init__(self, limit: int = 5):
-        self.recent_inputs = deque(maxlen=limit)
-        self.recent_emotions = deque(maxlen=limit)
+    def load(self):
+        if not os.path.exists(self.path):
+            return []
+        try:
+            with open(self.path, "r") as f:
+                return json.load(f)
+        except:
+            return []
 
-    def store(self, text: str, emotion: str):
-        self.recent_inputs.append(text)
-        self.recent_emotions.append(emotion)
+    def save(self):
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
+        with open(self.path, "w") as f:
+            json.dump(self.logs[-50:], f)  # keep last 50 messages
 
-    def recall_last_topic(self):
-        if not self.recent_inputs:
-            return None
-        return self.recent_inputs[-1]
+    def add(self, user_input, response):
+        self.logs.append({
+            "user": user_input,
+            "nyx": response
+        })
+        self.save()
 
-    def emotional_trend(self):
-        if not self.recent_emotions:
-            return "neutral"
-
-        positives = self.recent_emotions.count("positive")
-        negatives = self.recent_emotions.count("negative")
-
-        if positives > negatives:
-            return "positive"
-        elif negatives > positives:
-            return "negative"
-        return "neutral"
+    def recent(self, n=5):
+        return self.logs[-n:]
