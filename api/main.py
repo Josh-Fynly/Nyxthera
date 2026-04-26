@@ -1,12 +1,16 @@
+# api/main.py
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.personality import Personality
 from app.core.memory import Memory
 from app.core.state import State
-from app.core.ai import generate_response
+from app.core.ai import AIEngine
 
 app = FastAPI()
 
+# Allow frontend access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,29 +18,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-memory = Memory()
+# Initialize systems
 state = State()
+memory = Memory()
+ai = AIEngine()
+personality = Personality()
 
 
-@app.get("/")
-def root():
-    return {"status": "Nyxthera AI Active"}
-
-
-@app.post("/ai/respond")
-def ai_respond(data: dict):
+@app.post("/chat")
+async def chat(data: dict):
     user_input = data.get("input", "")
 
-    # Update emotional state
-    state.update(user_input)
+    # 1. Update emotional state
+    emotion = state.update(user_input)
 
-    # Generate AI response
-    response = generate_response(user_input, memory, state)
+    # 2. Store memory
+    memory.store(user_input)
 
-    # Save memory
-    memory.add(user_input, response)
+    # 3. Generate AI response
+    response = ai.generate(user_input, emotion, memory.logs)
+
+    # 4. Personality shaping
+    final_response = personality.format(response, emotion)
 
     return {
-        "response": response,
-        "state": state.get()
+        "response": final_response,
+        "emotion": emotion
     }
